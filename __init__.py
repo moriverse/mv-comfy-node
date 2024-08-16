@@ -1,6 +1,7 @@
 from .node_impl import *
 
 NODE_CLASS_MAPPINGS = {
+    "[MV]LoadImagesFromURL": LoadImagesFromUrl,
     "[MV]FaceDetector": FaceDetectorForEach,
     "[MV]CropFace": CropFace,
     "[MV]PasteFace": PasteFace,
@@ -10,6 +11,7 @@ NODE_CLASS_MAPPINGS = {
 
 
 NODE_DISPLAY_NAME_MAPPINGS = {
+    "[MV]LoadImagesFromURL": "Load Images From URL",
     "[MV]FaceDetector": "Face Detector",
     "[MV]CropFace": "Crop Face",
     "[MV]PasteFace": "Paste Face",

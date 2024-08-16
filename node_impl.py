@@ -1,15 +1,170 @@
+import base64
 import cv2
+import io
 import numpy as np
 import os
+import random
 import requests
 import torch
+import typing as t
 
 from gfpgan import GFPGANer
-from PIL import Image
+from PIL import Image, ImageOps
 
-from folder_paths import get_temp_directory, models_dir
+# Import Comfy components.
+import folder_paths
+
 
 USER_AGENT = "Moriverse/Comfy"
+
+
+class LoadImagesFromUrl:
+    def __init__(self) -> None:
+        self.output_dir = folder_paths.get_temp_directory()
+        self.filename_prefix = "TempImageFromUrl"
+
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {},
+            "optional": {
+                "image": (
+                    "STRING",
+                    {"default": "", "multiline": True, "dynamicPrompts": False},
+                ),
+                "url": (
+                    "STRING",
+                    {"default": "", "multiline": True, "dynamicPrompts": False},
+                ),
+            },
+        }
+
+    RETURN_TYPES = ("IMAGE",)
+    OUTPUT_IS_LIST = (True,)
+    RETURN_NAMES = ("images",)
+    CATEGORY = "Moriverse/image"
+    FUNCTION = "load_image"
+
+    def prepare_image_for_preview(
+        self,
+        image: Image.Image,
+        output_dir: str,
+        prefix=None,
+    ):
+        if prefix is None:
+            prefix = "preview_" + "".join(
+                random.choice("abcdefghijklmnopqrstupvxyz") for x in range(5)
+            )
+
+        # save image to temp folder
+        (
+            outdir,
+            filename,
+            counter,
+            subfolder,
+            _,
+        ) = folder_paths.get_save_image_path(
+            prefix,
+            output_dir,
+            image.width,
+            image.height,
+        )
+        file = f"{filename}_{counter:05}_.png"
+        image.save(os.path.join(outdir, file), format="PNG", compress_level=4)
+
+        return {
+            "filename": file,
+            "subfolder": subfolder,
+            "type": "temp",
+        }
+
+    def load_images_from_url(self, urls: t.List[str]):
+        images = []
+
+        for url in urls:
+            if url.startswith("data:image/"):
+                image = Image.open(io.BytesIO(base64.b64decode(url.split(",")[1])))
+
+            elif url.startswith("file://"):
+                url = url[7:]
+                if not os.path.isfile(url):
+                    raise Exception(f"File {url} does not exist")
+
+                image = Image.open(url)
+
+            elif url.startswith("http://") or url.startswith("https://"):
+                response = requests.get(url, timeout=5)
+                if response.status_code != 200:
+                    raise Exception(response.text)
+
+                image = Image.open(io.BytesIO(response.content))
+
+            elif url.startswith("/view?"):
+                from urllib.parse import parse_qs
+
+                qs = parse_qs(url[6:])
+                filename = qs.get("name", qs.get("filename", None))
+                if filename is None:
+                    raise Exception(f"Invalid url: {url}")
+
+                filename = filename[0]
+                subfolder = qs.get("subfolder", None)
+                if subfolder is not None:
+                    filename = os.path.join(subfolder[0], filename)
+
+                dirtype = qs.get("type", ["input"])
+                if dirtype[0] == "input":
+                    url = os.path.join(folder_paths.get_input_directory(), filename)
+                elif dirtype[0] == "output":
+                    url = os.path.join(folder_paths.get_output_directory(), filename)
+                elif dirtype[0] == "temp":
+                    url = os.path.join(folder_paths.get_temp_directory(), filename)
+                else:
+                    raise Exception(f"Invalid url: {url}")
+
+                image = Image.open(url)
+            elif url == "":
+                continue
+            else:
+                url = folder_paths.get_annotated_filepath(url)
+                if not os.path.isfile(url):
+                    raise Exception(f"Invalid url: {url}")
+
+                image = Image.open(url)
+
+            image = ImageOps.exif_transpose(image)
+            image = image.convert("RGB")
+            images.append(image)
+
+        return images
+
+    def load_image(self, image="", url=""):
+        if not image or image == "":
+            image = url
+
+        urls = image.strip().split("\n")
+        images = self.load_images_from_url(urls)
+        if len(images) == 0:
+            raise Exception("No image found.")
+
+        previews = []
+        np_images = []
+
+        for image in images:
+            # save image to temp folder
+            previews.append(
+                self.prepare_image_for_preview(
+                    image,
+                    self.output_dir,
+                    self.filename_prefix,
+                )
+            )
+            np_images.append(pil2tensor(image))
+
+        return {
+            "ui": {"images": previews},
+            "result": (np_images,),
+        }
 
 
 def _get_largest_part(parts):
@@ -381,7 +536,7 @@ class GFPGAN(GFPGANer):
             det_model="retinaface_resnet50",
             use_parse=True,
             device=self.device,
-            model_rootpath=os.path.join(models_dir, "face_detection"),
+            model_rootpath=os.path.join(folder_paths.models_dir, "face_detection"),
         )
 
         loadnet = torch.load(model_path)
@@ -417,7 +572,11 @@ class FaceRestoreModelLoader:
         else:
             raise Exception(f"Type of GFPGAN model not supported: {type}")
 
-        model_path = os.path.join(models_dir, "face_restore", f"{model_name}.pth")
+        model_path = os.path.join(
+            folder_paths.models_dir,
+            "face_restore",
+            f"{model_name}.pth",
+        )
         model = GFPGAN(
             model_path=model_path, arch=arch, channel_multiplier=channel_multiplier
         )
