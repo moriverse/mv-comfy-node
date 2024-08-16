@@ -1,0 +1,20 @@
+from .node_impl import *
+
+NODE_CLASS_MAPPINGS = {
+    "[MV]FaceDetector": FaceDetectorForEach,
+    "[MV]CropFace": CropFace,
+    "[MV]PasteFace": PasteFace,
+    "[MV]RestoreFace": RestoreFace,
+    "[MV]FaceRestoreLoader": FaceRestoreModelLoader,
+}
+
+
+NODE_DISPLAY_NAME_MAPPINGS = {
+    "[MV]FaceDetector": "Face Detector",
+    "[MV]CropFace": "Crop Face",
+    "[MV]PasteFace": "Paste Face",
+    "[MV]RestoreFace": "Restore Face",
+    "[MV]FaceRestoreLoader": "Face Restore Loader",
+}
+
+__all__ = ["NODE_CLASS_MAPPINGS", "NODE_DISPLAY_NAME_MAPPINGS"]

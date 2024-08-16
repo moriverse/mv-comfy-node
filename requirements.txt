@@ -1,0 +1,8 @@
+insightface
+opencv-python
+onnxruntime-gpu
+
+pyyaml
+basicsr@git+https://gitee.com/moriverse_2/BasicSR
+facexlib
+gfpgan
