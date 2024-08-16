@@ -26,13 +26,8 @@ class LoadImagesFromUrl:
     @classmethod
     def INPUT_TYPES(s):
         return {
-            "required": {},
-            "optional": {
-                "image": (
-                    "STRING",
-                    {"default": "", "multiline": True, "dynamicPrompts": False},
-                ),
-                "url": (
+            "required": {
+                "urls": (
                     "STRING",
                     {"default": "", "multiline": True, "dynamicPrompts": False},
                 ),
@@ -44,6 +39,32 @@ class LoadImagesFromUrl:
     RETURN_NAMES = ("images",)
     CATEGORY = "Moriverse/image"
     FUNCTION = "load_image"
+
+    def load_image(self, urls=""):
+        urls = urls.strip().split("\n")
+        images = self.load_images_from_url(urls)
+
+        if len(images) == 0:
+            raise Exception("No image found.")
+
+        previews = []
+        np_images = []
+
+        for image in images:
+            # save image to temp folder
+            previews.append(
+                self.prepare_image_for_preview(
+                    image,
+                    self.output_dir,
+                    self.filename_prefix,
+                )
+            )
+            np_images.append(pil2tensor(image))
+
+        return {
+            "ui": {"images": previews},
+            "result": (np_images,),
+        }
 
     def prepare_image_for_preview(
         self,
@@ -137,34 +158,6 @@ class LoadImagesFromUrl:
             images.append(image)
 
         return images
-
-    def load_image(self, image="", url=""):
-        if not image or image == "":
-            image = url
-
-        urls = image.strip().split("\n")
-        images = self.load_images_from_url(urls)
-        if len(images) == 0:
-            raise Exception("No image found.")
-
-        previews = []
-        np_images = []
-
-        for image in images:
-            # save image to temp folder
-            previews.append(
-                self.prepare_image_for_preview(
-                    image,
-                    self.output_dir,
-                    self.filename_prefix,
-                )
-            )
-            np_images.append(pil2tensor(image))
-
-        return {
-            "ui": {"images": previews},
-            "result": (np_images,),
-        }
 
 
 def _get_largest_part(parts):
