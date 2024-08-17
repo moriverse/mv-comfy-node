@@ -5,3 +5,4 @@ pyyaml
 basicsr@git+https://gitee.com/moriverse_2/BasicSR
 facexlib
 gfpgan
+mediapipe

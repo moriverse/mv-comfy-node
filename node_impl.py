@@ -14,6 +14,8 @@ from PIL import Image, ImageOps
 # Import Comfy components.
 import folder_paths
 
+from .mediapipe_impl import MediapipeSegmenter
+
 
 USER_AGENT = "Moriverse/Comfy"
 
@@ -616,3 +618,35 @@ class RestoreFace:
 
         result = torch.stack(result, dim=0)
         return (result,)
+
+
+class MediaPipeSegmenter:
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {
+                "images": ("IMAGE",),
+            },
+            "optional": {
+                "threshold": (
+                    "FLOAT",
+                    {"default": 0.5, "min": 0.0, "max": 1.0, "step": 0.01},
+                ),
+            },
+        }
+
+    RETURN_TYPES = ("MASKS",)
+    FUNCTION = "doit"
+    CATEGORY = "Moriverse/ops"
+
+    def doit(self, images, threshold=0.5):
+        model_path = os.path.join(
+            folder_paths.models_dir,
+            "mediapipe",
+            f"selfie_segmenter.tflite",
+        )
+
+        model = MediapipeSegmenter(model_path=model_path)
+        masks = model.detect([images], threshold=threshold)
+
+        return (masks,)
