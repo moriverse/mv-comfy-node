@@ -662,9 +662,8 @@ class MediaPipeSegmenter:
         masks = []
         for image in images:
             mask = model.detect(image, threshold=threshold)
-            mask = np2tensor(mask).unsqueeze(0)
-
+            mask = np2tensor(mask)
             masks.append(mask)
 
-        masks = torch.stack(masks)
+        masks = torch.stack(masks, dim=0)
         return (masks,)
