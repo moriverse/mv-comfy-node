@@ -30,33 +30,24 @@ class MediapipeSegmenter:
 
     def detect(
         self,
-        images,
+        image,
         threshold=0.5,
         confidence_mask_index=0,  # Default person index at 0.
     ):
-        masks = []
-        try:
-            options = ImageSegmenterOptions(
-                base_options=BaseOptions(model_asset_path=self.model_path),
-                running_mode=VisionRunningMode.IMAGE,
+        options = ImageSegmenterOptions(
+            base_options=BaseOptions(model_asset_path=self.model_path),
+            running_mode=VisionRunningMode.IMAGE,
+        )
+
+        with ImageSegmenter.create_from_options(options) as segmenter:
+            mp_image = mp.Image(
+                image_format=mp.ImageFormat.SRGB,
+                data=image,
             )
+            segmentation_result = segmenter.segment(mp_image)
+            confidence_mask = segmentation_result.confidence_masks[
+                confidence_mask_index
+            ]
 
-            with ImageSegmenter.create_from_options(options) as segmenter:
-                for image in images:
-                    mp_image = mp.Image(
-                        image_format=mp.ImageFormat.SRGB,
-                        data=image,
-                    )
-                    segmentation_result = segmenter.segment(mp_image)
-                    print(segmentation_result)
-                    confidence_mask = segmentation_result.confidence_masks[
-                        confidence_mask_index
-                    ]
-
-                    binary_mask = confidence_mask.numpy_view() > threshold
-                    masks.append((binary_mask * 255).astype(np.uint8))
-
-        except Exception as e:
-            print(f"MediapipeDetector: unable to execute.\n{e}")
-
-        return np.stack(masks)
+            binary_mask = confidence_mask.numpy_view() > threshold
+            return (binary_mask * 255).astype(np.uint8)

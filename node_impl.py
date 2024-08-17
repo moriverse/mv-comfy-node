@@ -20,6 +20,24 @@ from .mediapipe_impl import MediapipeSegmenter
 USER_AGENT = "Moriverse/Comfy"
 
 
+def tensor2np(image):
+    return np.clip(255.0 * image.cpu().numpy(), 0, 255).astype(np.uint8)
+
+
+def tensor2pil(image):
+    return Image.fromarray(
+        np.clip(255.0 * image.cpu().numpy().squeeze(0), 0, 255).astype(np.uint8)
+    )
+
+
+def pil2tensor(image):
+    return torch.from_numpy(np.array(image).astype(np.float32) / 255.0).unsqueeze(0)
+
+
+def np2tensor(image):
+    return torch.from_numpy(image.astype(np.float32) / 255.0).unsqueeze(0)
+
+
 class LoadImagesFromUrl:
     def __init__(self) -> None:
         self.output_dir = folder_paths.get_temp_directory()
@@ -374,16 +392,6 @@ class CropFace:
 LANCZOS = Image.Resampling.LANCZOS if hasattr(Image, "Resampling") else Image.LANCZOS
 
 
-def tensor2pil(image):
-    return Image.fromarray(
-        np.clip(255.0 * image.cpu().numpy().squeeze(0), 0, 255).astype(np.uint8)
-    )
-
-
-def pil2tensor(image):
-    return torch.from_numpy(np.array(image).astype(np.float32) / 255.0).unsqueeze(0)
-
-
 class PasteFace:
     @classmethod
     def INPUT_TYPES(s):
@@ -640,13 +648,22 @@ class MediaPipeSegmenter:
     CATEGORY = "Moriverse/ops"
 
     def doit(self, images, threshold=0.5):
-        model_path = os.path.join(
-            folder_paths.models_dir,
-            "mediapipe",
-            f"selfie_segmenter.tflite",
+        model = MediapipeSegmenter(
+            model_path=os.path.join(
+                folder_paths.models_dir,
+                "mediapipe",
+                f"selfie_segmenter.tflite",
+            )
         )
 
-        model = MediapipeSegmenter(model_path=model_path)
-        masks = model.detect([images], threshold=threshold)
+        if isinstance(images, torch.Tensor):
+            images = tensor2np(images)
+
+        masks = []
+        for image in images:
+            mask = model.detect(image, threshold=threshold)
+            mask = np2tensor(mask).unsqueeze(0)
+
+            masks.append(mask)
 
         return (masks,)
