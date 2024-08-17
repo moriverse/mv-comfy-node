@@ -666,4 +666,5 @@ class MediaPipeSegmenter:
 
             masks.append(mask)
 
+        masks = torch.stack(masks)
         return (masks,)
