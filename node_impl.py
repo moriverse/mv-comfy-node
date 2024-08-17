@@ -55,8 +55,6 @@ class LoadImagesFromUrl:
         }
 
     RETURN_TYPES = ("IMAGE",)
-    OUTPUT_IS_LIST = (True,)
-    RETURN_NAMES = ("images",)
     CATEGORY = "Moriverse/image"
     FUNCTION = "load_image"
 
@@ -68,7 +66,7 @@ class LoadImagesFromUrl:
             raise Exception("No image found.")
 
         previews = []
-        np_images = []
+        result = []
 
         for image in images:
             # save image to temp folder
@@ -79,11 +77,12 @@ class LoadImagesFromUrl:
                     self.filename_prefix,
                 )
             )
-            np_images.append(pil2tensor(image))
+            image = pil2tensor(image).squeeze(0)
+            result.append(image)
 
         return {
             "ui": {"images": previews},
-            "result": (np_images,),
+            "result": (result,),
         }
 
     def prepare_image_for_preview(
