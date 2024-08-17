@@ -38,6 +38,85 @@ def np2tensor(image):
     return torch.from_numpy(image.astype(np.float32) / 255.0).unsqueeze(0)
 
 
+def prepare_image_for_preview(
+    image: Image.Image,
+    output_dir: str,
+    prefix=None,
+):
+    if prefix is None:
+        prefix = "preview_" + "".join(
+            random.choice("abcdefghijklmnopqrstupvxyz") for x in range(5)
+        )
+
+    # save image to temp folder
+    (
+        outdir,
+        filename,
+        counter,
+        subfolder,
+        _,
+    ) = folder_paths.get_save_image_path(
+        prefix,
+        output_dir,
+        image.width,
+        image.height,
+    )
+    file = f"{filename}_{counter:05}_.png"
+    image.save(os.path.join(outdir, file), format="PNG", compress_level=4)
+
+    return {
+        "filename": file,
+        "subfolder": subfolder,
+        "type": "temp",
+    }
+
+
+class LoadImageUrl:
+    def __init__(self) -> None:
+        self.output_dir = folder_paths.get_temp_directory()
+        self.filename_prefix = "TempImageFromUrl"
+
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {
+                "url": (
+                    "STRING",
+                    {
+                        "multiline": False,
+                    },
+                )
+            }
+        }
+
+    RETURN_TYPES = ("IMAGE",)
+    FUNCTION = "load_image_url"
+    CATEGORY = "Moriverse/image"
+
+    def load_image_url(self, url):
+        with requests.get(
+            url,
+            stream=True,
+            headers={"User-Agent": USER_AGENT},
+            timeout=10,
+        ) as r:
+            r.raise_for_status()
+            image = Image.open(r.raw)
+
+        image = image.convert("RGB")
+        preview = prepare_image_for_preview(
+            image,
+            self.output_dir,
+            self.filename_prefix,
+        )
+        result = pil2tensor(image)
+
+        return {
+            "ui": {"images": [preview]},
+            "result": (result,),
+        }
+
+
 class LoadImagesFromUrl:
     def __init__(self) -> None:
         self.output_dir = folder_paths.get_temp_directory()
@@ -71,7 +150,7 @@ class LoadImagesFromUrl:
         for image in images:
             # save image to temp folder
             previews.append(
-                self.prepare_image_for_preview(
+                prepare_image_for_preview(
                     image,
                     self.output_dir,
                     self.filename_prefix,
@@ -83,39 +162,6 @@ class LoadImagesFromUrl:
         return {
             "ui": {"images": previews},
             "result": (result,),
-        }
-
-    def prepare_image_for_preview(
-        self,
-        image: Image.Image,
-        output_dir: str,
-        prefix=None,
-    ):
-        if prefix is None:
-            prefix = "preview_" + "".join(
-                random.choice("abcdefghijklmnopqrstupvxyz") for x in range(5)
-            )
-
-        # save image to temp folder
-        (
-            outdir,
-            filename,
-            counter,
-            subfolder,
-            _,
-        ) = folder_paths.get_save_image_path(
-            prefix,
-            output_dir,
-            image.width,
-            image.height,
-        )
-        file = f"{filename}_{counter:05}_.png"
-        image.save(os.path.join(outdir, file), format="PNG", compress_level=4)
-
-        return {
-            "filename": file,
-            "subfolder": subfolder,
-            "type": "temp",
         }
 
     def load_images_from_url(self, urls: t.List[str]):
@@ -133,7 +179,11 @@ class LoadImagesFromUrl:
                 image = Image.open(url)
 
             elif url.startswith("http://") or url.startswith("https://"):
-                response = requests.get(url, timeout=5)
+                response = requests.get(
+                    url,
+                    timeout=10,
+                    headers={"User-Agent": USER_AGENT},
+                )
                 if response.status_code != 200:
                     raise Exception(response.text)
 
