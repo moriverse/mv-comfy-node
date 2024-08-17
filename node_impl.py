@@ -635,7 +635,7 @@ class MediaPipeSegmenter:
             },
         }
 
-    RETURN_TYPES = ("MASKS",)
+    RETURN_TYPES = ("MASK",)
     FUNCTION = "doit"
     CATEGORY = "Moriverse/ops"
 

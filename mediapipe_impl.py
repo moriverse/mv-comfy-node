@@ -59,4 +59,4 @@ class MediapipeSegmenter:
         except Exception as e:
             print(f"MediapipeDetector: unable to execute.\n{e}")
 
-        return masks
+        return np.stack(masks)
