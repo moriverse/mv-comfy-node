@@ -46,7 +46,8 @@ class MediapipeSegmenter:
             )
             segmentation_result = segmenter.segment(mp_image)
 
-            combined_mask = np.zeros(image.shape, dtype=np.bool_)
+            h, w, _ = image.shape
+            combined_mask = np.zeros((h, w), dtype=np.bool_)
             for index in confidence_mask_indexes:
                 confidence_mask = segmentation_result.confidence_masks[index]
                 binary_mask = confidence_mask.numpy_view() > threshold
