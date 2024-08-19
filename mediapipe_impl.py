@@ -32,7 +32,7 @@ class MediapipeSegmenter:
         self,
         image,
         threshold=0.5,
-        confidence_mask_index=0,  # Default person index at 0.
+        confidence_mask_indexes=[0],  # Default person index at 0.
     ):
         options = ImageSegmenterOptions(
             base_options=BaseOptions(model_asset_path=self.model_path),
@@ -45,9 +45,12 @@ class MediapipeSegmenter:
                 data=image,
             )
             segmentation_result = segmenter.segment(mp_image)
-            confidence_mask = segmentation_result.confidence_masks[
-                confidence_mask_index
-            ]
 
-            binary_mask = confidence_mask.numpy_view() > threshold
-            return (binary_mask * 255).astype(np.uint8)
+            combined_mask = np.zeros(image.shape, dtype=np.bool_)
+            for index in confidence_mask_indexes:
+                confidence_mask = segmentation_result.confidence_masks[index]
+                binary_mask = confidence_mask.numpy_view() > threshold
+
+                combined_mask = np.bitwise_or(combined_mask, binary_mask)
+
+            return (combined_mask * 255).astype(np.uint8)

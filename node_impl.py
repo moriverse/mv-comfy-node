@@ -701,7 +701,7 @@ class MediaPipeSegmenter:
             model_path=os.path.join(
                 folder_paths.models_dir,
                 "mediapipe",
-                f"selfie_segmenter.tflite",
+                f"selfie_multiclass_256x256.tflite",
             )
         )
 
@@ -710,7 +710,11 @@ class MediaPipeSegmenter:
 
         masks = []
         for image in images:
-            mask = model.detect(image, threshold=threshold)
+            mask = model.detect(
+                image,
+                threshold=threshold,
+                confidence_mask_indexes=[1, 2, 3],
+            )
             mask = np2tensor(mask)
             masks.append(mask)
 
