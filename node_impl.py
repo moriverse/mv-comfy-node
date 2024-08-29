@@ -4,6 +4,7 @@ import io
 import numpy as np
 import os
 import random
+import re
 import requests
 import torch
 import typing as t
@@ -14,6 +15,7 @@ from PIL import Image, ImageOps
 # Import Comfy components.
 import folder_paths
 
+from .blip_impl import Interrogator, Config
 from .mediapipe_impl import MediapipeSegmenter
 
 
@@ -720,3 +722,72 @@ class MediaPipeSegmenter:
 
         masks = torch.stack(masks, dim=0)
         return (masks,)
+
+
+class Blip:
+    def __init__(self):
+        self.ci = None
+
+    @classmethod
+    def INPUT_TYPES(s):
+        return {"required": {"image": ("IMAGE",)}}
+
+    RETURN_TYPES = ("STRING",)
+    RETURN_NAMES = ("caption",)
+    FUNCTION = "interrogate"
+    CATEGORY = "MV"
+
+    def interrogate(self, image):
+        # ci expects a PIL image, but we get a torch tensor:
+        if image.shape[0] > 1:
+            print(
+                "Warning: Blip_Interrogator expects a single image, but got a batch. Using first image in batch."
+            )
+
+        ci = self.load_ci()
+
+        pil_image = tensor2pil(image[0])
+        caption = ci.generate_caption(pil_image)
+        caption = self.clean_prompt(caption)
+
+        print(f"Interogated prompt: {caption}")
+
+        return (caption,)
+
+    def load_ci(self):
+        if self.ci is None:
+            BLIP_MODEL_DIR = os.path.abspath(
+                os.path.join(str(folder_paths.models_dir), "blip")
+            )
+            self.ci = Interrogator(Config(cache_dir=BLIP_MODEL_DIR))
+
+        return self.ci
+
+    def clean_prompt(self, text):
+        text = text.replace("arafed", "")
+
+        # Replace double spaces with single space
+        text = re.sub(r"\s+", " ", text)
+
+        # Replace double commas with single comma
+        text = re.sub(r",+", ",", text)
+
+        # Remove spaces before commas
+        text = re.sub(r"\s+,", ",", text)
+
+        # Ensure space after commas (if not followed by another punctuation or end of string)
+        text = re.sub(r",([^\s\.,;?!])", r", \1", text)
+
+        # Trim spaces around periods and ensure one space after
+        text = re.sub(r"\s*\.\s*", ". ", text)
+
+        # Remove leading commas
+        text = re.sub(r"^,", "", text)
+
+        # Capitalize the first letter of the sentence
+        text = text[0].upper() + text[1:] if text else text
+
+        # convert to utf-8:
+        text = text.encode("utf-8", "ignore").decode("utf-8")
+
+        return text.strip()

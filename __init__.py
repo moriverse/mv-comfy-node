@@ -1,5 +1,4 @@
 from .node_impl import *
-from .clip_tools import *
 
 NODE_CLASS_MAPPINGS = {
     "[MV]LoadSingleImageURL": LoadImageUrl,
@@ -10,7 +9,7 @@ NODE_CLASS_MAPPINGS = {
     "[MV]RestoreFace": RestoreFace,
     "[MV]FaceRestoreLoader": FaceRestoreModelLoader,
     "[MV]MediaPipeSegmenter": MediaPipeSegmenter,
-    "[MV]ClipInterrogator": CLIP_Interrogator,
+    "[MV]Blip": Blip,
 }
 
 
@@ -23,7 +22,7 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "[MV]RestoreFace": "Restore Face",
     "[MV]FaceRestoreLoader": "Face Restore Loader",
     "[MV]MediaPipeSegmenter": "Mediapipe Segmenter",
-    "[MV]ClipInterrogator": "Clip Interrogator",
+    "[MV]Blip": "Blip",
 }
 
 __all__ = ["NODE_CLASS_MAPPINGS", "NODE_DISPLAY_NAME_MAPPINGS"]
