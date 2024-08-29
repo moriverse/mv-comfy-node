@@ -6,3 +6,5 @@ basicsr@git+https://gitee.com/moriverse_2/BasicSR
 facexlib
 gfpgan
 mediapipe
+clip-interrogator==0.6.0
+open_clip_torch
