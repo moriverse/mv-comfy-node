@@ -10,6 +10,8 @@ NODE_CLASS_MAPPINGS = {
     "[MV]FaceRestoreLoader": FaceRestoreModelLoader,
     "[MV]MediaPipeSegmenter": MediaPipeSegmenter,
     "[MV]Blip": Blip,
+    "[MV]ImageContrast": ImageContrast,
+    "[MV]ImageBrightness": ImageBrightness,
 }
 
 
@@ -23,6 +25,8 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "[MV]FaceRestoreLoader": "Face Restore Loader",
     "[MV]MediaPipeSegmenter": "Mediapipe Segmenter",
     "[MV]Blip": "Blip",
+    "[MV]ImageContrast": "Image Contrast",
+    "[MV]ImageBrightness": "Image Brightness",
 }
 
 __all__ = ["NODE_CLASS_MAPPINGS", "NODE_DISPLAY_NAME_MAPPINGS"]

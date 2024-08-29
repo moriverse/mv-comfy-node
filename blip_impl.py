@@ -27,7 +27,6 @@ class Config:
     caption_processor = None
 
     # blip settings
-    caption_max_length: int = 64
     caption_model_name: Optional[str] = (
         "blip-large"  # use a key from CAPTION_MODELS or None
     )
@@ -89,7 +88,12 @@ class Interrogator:
             self.caption_model = self.config.caption_model
             self.caption_processor = self.config.caption_processor
 
-    def generate_caption(self, pil_image: Image, input_txt="") -> str:
+    def generate_caption(
+        self,
+        pil_image: Image,
+        input_txt="",
+        caption_max_length=64,
+    ) -> str:
         assert self.caption_model is not None, "No caption model loaded."
         self._prepare_caption()
 
@@ -106,7 +110,7 @@ class Interrogator:
             inputs = inputs.to(self.dtype)
 
         tokens = self.caption_model.generate(
-            **inputs, max_new_tokens=self.config.caption_max_length + len(input_txt)
+            **inputs, max_new_tokens=caption_max_length + len(input_txt)
         )
         caption = self.caption_processor.batch_decode(tokens, skip_special_tokens=True)[
             0
