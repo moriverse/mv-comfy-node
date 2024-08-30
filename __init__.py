@@ -12,6 +12,8 @@ NODE_CLASS_MAPPINGS = {
     "[MV]MediaPipeSegmenter": MediaPipeSegmenter,
     "[MV]Blip": Blip,
     "[MV]ExecutionTime": ExecutionTime,
+    "[MV]ImageContrast": ImageContrast,
+    "[MV]ImageBrightness": ImageBrightness,
 }
 
 
@@ -26,6 +28,8 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "[MV]MediaPipeSegmenter": "Mediapipe Segmenter",
     "[MV]Blip": "Blip",
     "[MV]ExecutionTime": "Execution Time",
+    "[MV]ImageContrast": "Image Contrast",
+    "[MV]ImageBrightness": "Image Brightness",
 }
 
 __all__ = ["NODE_CLASS_MAPPINGS", "NODE_DISPLAY_NAME_MAPPINGS"]

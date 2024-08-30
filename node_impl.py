@@ -10,7 +10,7 @@ import torch
 import typing as t
 
 from gfpgan import GFPGANer
-from PIL import Image, ImageOps
+from PIL import Image, ImageOps, ImageEnhance
 
 # Import Comfy components.
 import folder_paths
@@ -730,14 +730,22 @@ class Blip:
 
     @classmethod
     def INPUT_TYPES(s):
-        return {"required": {"image": ("IMAGE",)}}
+        return {
+            "required": {"image": ("IMAGE",)},
+            "optional": {
+                "caption_max_length": (
+                    "INT",
+                    {"default": 64, "min": 0, "max": 128, "step": 1},
+                ),
+            },
+        }
 
     RETURN_TYPES = ("STRING",)
     RETURN_NAMES = ("caption",)
     FUNCTION = "interrogate"
     CATEGORY = "MV"
 
-    def interrogate(self, image):
+    def interrogate(self, image, caption_max_length):
         # ci expects a PIL image, but we get a torch tensor:
         if image.shape[0] > 1:
             print(
@@ -746,8 +754,11 @@ class Blip:
 
         ci = self.load_ci()
 
-        pil_image = tensor2pil(image[0])
-        caption = ci.generate_caption(pil_image)
+        pil_image = tensor2pil(image)
+        caption = ci.generate_caption(
+            pil_image,
+            caption_max_length=caption_max_length,
+        )
         caption = self.clean_prompt(caption)
 
         print(f"Interogated prompt: {caption}")
@@ -759,7 +770,11 @@ class Blip:
             BLIP_MODEL_DIR = os.path.abspath(
                 os.path.join(str(folder_paths.models_dir), "blip")
             )
-            self.ci = Interrogator(Config(cache_dir=BLIP_MODEL_DIR))
+            self.ci = Interrogator(
+                Config(
+                    cache_dir=BLIP_MODEL_DIR,
+                )
+            )
 
         return self.ci
 
@@ -791,3 +806,86 @@ class Blip:
         text = text.encode("utf-8", "ignore").decode("utf-8")
 
         return text.strip()
+
+
+class ImageBrightness:
+
+    @classmethod
+    def INPUT_TYPES(self):
+
+        return {
+            "required": {
+                "image": ("IMAGE",),  #
+                "brightness": (
+                    "FLOAT",
+                    {"default": 1, "min": 0.0, "max": 3, "step": 0.01},
+                ),
+            },
+        }
+
+    RETURN_TYPES = ("IMAGE",)
+    RETURN_NAMES = ("image",)
+    FUNCTION = "brightness"
+    CATEGORY = "Moriverse/ops"
+
+    def brightness(self, image, brightness):
+        ret_images = []
+
+        for i in image:
+            i = torch.unsqueeze(i, 0)
+            __image = tensor2pil(i)
+            ret_image = __image.convert("RGB")
+            if brightness != 1:
+                brightness_image = ImageEnhance.Brightness(ret_image)
+                ret_image = brightness_image.enhance(factor=brightness)
+
+            if __image.mode == "RGBA":
+                ret_image = self.RGB2RGBA(ret_image, __image.split()[-1])
+            ret_images.append(pil2tensor(ret_image))
+
+        return (torch.cat(ret_images, dim=0),)
+
+    def RGB2RGBA(self, image: Image, mask: Image) -> Image:
+        (R, G, B) = image.convert("RGB").split()
+        return Image.merge("RGBA", (R, G, B, mask.convert("L")))
+
+
+class ImageContrast:
+    @classmethod
+    def INPUT_TYPES(self):
+
+        return {
+            "required": {
+                "image": ("IMAGE",),  #
+                "contrast": (
+                    "FLOAT",
+                    {"default": 1, "min": 0.0, "max": 3, "step": 0.01},
+                ),
+            },
+        }
+
+    RETURN_TYPES = ("IMAGE",)
+    RETURN_NAMES = ("image",)
+    FUNCTION = "brightness"
+    CATEGORY = "Moriverse/ops"
+
+    def brightness(self, image, contrast):
+        ret_images = []
+
+        for i in image:
+            i = torch.unsqueeze(i, 0)
+            __image = tensor2pil(i)
+            ret_image = __image.convert("RGB")
+            if contrast != 1:
+                contrast_image = ImageEnhance.Contrast(ret_image)
+                ret_image = contrast_image.enhance(factor=contrast)
+
+            if __image.mode == "RGBA":
+                ret_image = self.RGB2RGBA(ret_image, __image.split()[-1])
+            ret_images.append(pil2tensor(ret_image))
+
+        return (torch.cat(ret_images, dim=0),)
+
+    def RGB2RGBA(self, image: Image, mask: Image) -> Image:
+        (R, G, B) = image.convert("RGB").split()
+        return Image.merge("RGBA", (R, G, B, mask.convert("L")))
