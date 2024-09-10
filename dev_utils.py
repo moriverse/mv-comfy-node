@@ -36,6 +36,7 @@ try:
         execution_list,
         pending_subgraph_results,
     ):
+        print("swizzle_execute..")
         unique_id = current_item
         class_type = dynprompt.get_node(unique_id)["class_type"]
         result = origin_execute(
@@ -49,6 +50,8 @@ try:
             execution_list,
             pending_subgraph_results,
         )
+
+        print("swizzle_execute end..")
 
         global CURRENT_START_EXECUTION_DATA
         if not CURRENT_START_EXECUTION_DATA:
@@ -82,7 +85,9 @@ try:
                 start_perf_time=time.perf_counter(), nodes_start_perf_time={}
             )
 
+        print("prompt server send sync..")
         origin_func(self, event=event, data=data, sid=sid)
+        print("prompt server send sync end..")
 
         if event == "executing" and data and CURRENT_START_EXECUTION_DATA:
             if data.get("node") is not None:
