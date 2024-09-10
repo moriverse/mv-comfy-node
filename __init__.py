@@ -1,5 +1,4 @@
 from .node_impl import *
-from .dev_utils import *
 
 NODE_CLASS_MAPPINGS = {
     "[MV]LoadSingleImageURL": LoadImageUrl,
@@ -11,7 +10,6 @@ NODE_CLASS_MAPPINGS = {
     "[MV]FaceRestoreLoader": FaceRestoreModelLoader,
     "[MV]MediaPipeSegmenter": MediaPipeSegmenter,
     "[MV]Blip": Blip,
-    "[MV]ExecutionTime": ExecutionTime,
     "[MV]ImageContrast": ImageContrast,
     "[MV]ImageBrightness": ImageBrightness,
 }
@@ -27,7 +25,6 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "[MV]FaceRestoreLoader": "Face Restore Loader",
     "[MV]MediaPipeSegmenter": "Mediapipe Segmenter",
     "[MV]Blip": "Blip",
-    "[MV]ExecutionTime": "Execution Time",
     "[MV]ImageContrast": "Image Contrast",
     "[MV]ImageBrightness": "Image Brightness",
 }
