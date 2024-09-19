@@ -5,7 +5,6 @@ import numpy as np
 import os
 import random
 import re
-import requests
 import torch
 import typing as t
 
@@ -17,9 +16,7 @@ import folder_paths
 
 from .blip_impl import Interrogator, Config
 from .mediapipe_impl import MediapipeSegmenter
-
-
-USER_AGENT = "Moriverse/Comfy"
+from .network import requests_session_with_retries
 
 
 def tensor2np(image):
@@ -48,10 +45,9 @@ def load_images_from_url(urls: t.List[str]):
             continue
 
         if url.startswith("http://") or url.startswith("https://"):
-            response = requests.get(
+            response = requests_session_with_retries().get(
                 url,
                 timeout=10,
-                headers={"User-Agent": USER_AGENT},
                 stream=True,
             )
             response.raise_for_status()
@@ -162,15 +158,6 @@ class LoadImageUrl:
     CATEGORY = "Moriverse/image"
 
     def load_image_url(self, url):
-        with requests.get(
-            url,
-            stream=True,
-            headers={"User-Agent": USER_AGENT},
-            timeout=10,
-        ) as r:
-            r.raise_for_status()
-            image = Image.open(r.raw)
-
         images = load_images_from_url(urls=[url])
         if not images:
             raise Exception(f"No image loaded from url: {url}")
