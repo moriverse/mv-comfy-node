@@ -12,6 +12,8 @@ NODE_CLASS_MAPPINGS = {
     "[MV]Blip": Blip,
     "[MV]ImageContrast": ImageContrast,
     "[MV]ImageBrightness": ImageBrightness,
+    "[MV]InsightFaceLoader": InsightFaceLoader,
+    "[MV]GetCroppedFace": GetCroppedFace,
 }
 
 
@@ -27,6 +29,8 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "[MV]Blip": "Blip",
     "[MV]ImageContrast": "Image Contrast",
     "[MV]ImageBrightness": "Image Brightness",
+    "[MV]InsightFaceLoader": "InsightFace Loader",
+    "[MV]GetCroppedFace": "Get Cropped Face",
 }
 
 __all__ = ["NODE_CLASS_MAPPINGS", "NODE_DISPLAY_NAME_MAPPINGS"]

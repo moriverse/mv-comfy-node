@@ -40,6 +40,72 @@ def np2tensor(image):
     return torch.from_numpy(image.astype(np.float32) / 255.0).unsqueeze(0)
 
 
+def load_images_from_url(urls: t.List[str]):
+    images = []
+
+    for url in urls:
+        if not url:
+            continue
+
+        if url.startswith("http://") or url.startswith("https://"):
+            response = requests.get(
+                url,
+                timeout=10,
+                headers={"User-Agent": USER_AGENT},
+                stream=True,
+            )
+            response.raise_for_status()
+
+            image = Image.open(io.BytesIO(response.content))
+
+        elif url.startswith("data:image/"):
+            image = Image.open(io.BytesIO(base64.b64decode(url.split(",")[1])))
+
+        elif url.startswith("file://"):
+            url = url[7:]
+            if not os.path.isfile(url):
+                raise Exception(f"File {url} does not exist")
+
+            image = Image.open(url)
+
+        elif url.startswith("/view?"):
+            from urllib.parse import parse_qs
+
+            qs = parse_qs(url[6:])
+            filename = qs.get("name", qs.get("filename", None))
+            if filename is None:
+                raise Exception(f"Invalid url: {url}")
+
+            filename = filename[0]
+            subfolder = qs.get("subfolder", None)
+            if subfolder is not None:
+                filename = os.path.join(subfolder[0], filename)
+
+            dirtype = qs.get("type", ["input"])
+            if dirtype[0] == "input":
+                url = os.path.join(folder_paths.get_input_directory(), filename)
+            elif dirtype[0] == "output":
+                url = os.path.join(folder_paths.get_output_directory(), filename)
+            elif dirtype[0] == "temp":
+                url = os.path.join(folder_paths.get_temp_directory(), filename)
+            else:
+                raise Exception(f"Invalid url: {url}")
+
+            image = Image.open(url)
+        else:
+            url = folder_paths.get_annotated_filepath(url)
+            if not os.path.isfile(url):
+                raise Exception(f"Invalid url: {url}")
+
+            image = Image.open(url)
+
+        image = ImageOps.exif_transpose(image)
+        image = image.convert("RGB")
+        images.append(image)
+
+    return images
+
+
 def prepare_image_for_preview(
     image: Image.Image,
     output_dir: str,
@@ -105,7 +171,11 @@ class LoadImageUrl:
             r.raise_for_status()
             image = Image.open(r.raw)
 
-        image = image.convert("RGB")
+        images = load_images_from_url(urls=[url])
+        if not images:
+            raise Exception(f"No image loaded from url: {url}")
+
+        image = images[0]
         preview = prepare_image_for_preview(
             image,
             self.output_dir,
@@ -141,7 +211,7 @@ class LoadImagesFromUrl:
 
     def load_image(self, urls=""):
         urls = urls.strip().split("\n")
-        images = self.load_images_from_url(urls)
+        images = load_images_from_url(urls)
 
         if len(images) == 0:
             raise Exception("No image found.")
@@ -165,70 +235,6 @@ class LoadImagesFromUrl:
             "ui": {"images": previews},
             "result": (result,),
         }
-
-    def load_images_from_url(self, urls: t.List[str]):
-        images = []
-
-        for url in urls:
-            if url.startswith("data:image/"):
-                image = Image.open(io.BytesIO(base64.b64decode(url.split(",")[1])))
-
-            elif url.startswith("file://"):
-                url = url[7:]
-                if not os.path.isfile(url):
-                    raise Exception(f"File {url} does not exist")
-
-                image = Image.open(url)
-
-            elif url.startswith("http://") or url.startswith("https://"):
-                response = requests.get(
-                    url,
-                    timeout=10,
-                    headers={"User-Agent": USER_AGENT},
-                )
-                if response.status_code != 200:
-                    raise Exception(response.text)
-
-                image = Image.open(io.BytesIO(response.content))
-
-            elif url.startswith("/view?"):
-                from urllib.parse import parse_qs
-
-                qs = parse_qs(url[6:])
-                filename = qs.get("name", qs.get("filename", None))
-                if filename is None:
-                    raise Exception(f"Invalid url: {url}")
-
-                filename = filename[0]
-                subfolder = qs.get("subfolder", None)
-                if subfolder is not None:
-                    filename = os.path.join(subfolder[0], filename)
-
-                dirtype = qs.get("type", ["input"])
-                if dirtype[0] == "input":
-                    url = os.path.join(folder_paths.get_input_directory(), filename)
-                elif dirtype[0] == "output":
-                    url = os.path.join(folder_paths.get_output_directory(), filename)
-                elif dirtype[0] == "temp":
-                    url = os.path.join(folder_paths.get_temp_directory(), filename)
-                else:
-                    raise Exception(f"Invalid url: {url}")
-
-                image = Image.open(url)
-            elif url == "":
-                continue
-            else:
-                url = folder_paths.get_annotated_filepath(url)
-                if not os.path.isfile(url):
-                    raise Exception(f"Invalid url: {url}")
-
-                image = Image.open(url)
-
-            image = ImageOps.exif_transpose(image)
-            image = image.convert("RGB")
-            images.append(image)
-
-        return images
 
 
 def _get_largest_part(parts):
@@ -337,14 +343,16 @@ class FaceDetectorForEach:
         result = torch.stack(result, dim=0)
         return (result,)
 
-    def _crop(self, image, segs, face_ratio, size):
+    def _crop(self, target, segs, face_ratio, size):
+        image = target.clone()
+
         h, w = segs[0]
         face = _get_largest_part(segs[1])
 
         if face is None:
             return None
 
-        bbox = face.bbox
+        bbox = face.crop_region
         face_w = bbox[2] - bbox[0]
         face_h = bbox[3] - bbox[1]
 
@@ -699,7 +707,7 @@ class MediaPipeSegmenter:
     CATEGORY = "Moriverse/ops"
 
     def doit(self, images, threshold=0.5):
-        model = MediapipeSegmenter(
+        body_model = MediapipeSegmenter(
             model_path=os.path.join(
                 folder_paths.models_dir,
                 "mediapipe",
@@ -712,7 +720,7 @@ class MediaPipeSegmenter:
 
         masks = []
         for image in images:
-            mask = model.detect(
+            mask = body_model.detect(
                 image,
                 threshold=threshold,
                 confidence_mask_indexes=[1, 2, 3],
@@ -889,3 +897,102 @@ class ImageContrast:
     def RGB2RGBA(self, image: Image, mask: Image) -> Image:
         (R, G, B) = image.convert("RGB").split()
         return Image.merge("RGBA", (R, G, B, mask.convert("L")))
+
+
+class InsightFaceLoader:
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {
+                "provider": (["CPU", "CUDA", "ROCM"],),
+                "model_name": (["buffalo_l", "antelopev2"],),
+            },
+        }
+
+    RETURN_TYPES = ("FACEANALYSIS",)
+    FUNCTION = "load_insightface"
+    CATEGORY = "Morvierse/loaders"
+
+    def load_insightface(self, provider, model_name):
+        return (self.insightface_loader(provider, model_name=model_name),)
+
+    def insightface_loader(self, provider, model_name="buffalo_l"):
+        try:
+            from insightface.app import FaceAnalysis
+        except ImportError as e:
+            raise Exception(e)
+
+        path = os.path.join(folder_paths.models_dir, "insightface")
+        model = FaceAnalysis(
+            name=model_name,
+            root=path,
+            providers=[provider + "ExecutionProvider"],
+        )
+        model.prepare(ctx_id=0, det_size=(640, 640))
+        return model
+
+
+class GetCroppedFace:
+    @classmethod
+    def INPUT_TYPES(self):
+        return {
+            "required": {
+                "images": ("IMAGE",),
+                "insightface": ("FACEANALYSIS",),
+            },
+        }
+
+    CATEGORY = "Moriverse/face"
+    RETURN_TYPES = ("IMAGE",)
+    RETURN_NAMES = ("face_image",)
+    FUNCTION = "apply"
+
+    def apply(self, images, insightface):
+
+        from insightface.utils import face_align
+
+        insightface.det_model.input_size = (640, 640)  # reset the detection size
+
+        result = []
+        for i in range(len(images)):
+            for size in [(size, size) for size in range(640, 256, -64)]:
+                insightface.det_model.input_size = (
+                    size  # TODO: hacky but seems to be working
+                )
+                image = tensor_to_image(images[i])
+                face = insightface.get(image)
+                if face:
+                    result.append(
+                        image_to_tensor(
+                            face_align.norm_crop(
+                                image,
+                                landmark=face[0].kps,
+                                image_size=640,
+                            )
+                        )
+                    )
+
+                    if 640 not in size:
+                        print(
+                            f"\033[33mINFO: InsightFace detection resolution lowered to {size}.\033[0m"
+                        )
+                    break
+            else:
+                raise Exception("InsightFace: No face detected.")
+
+        result = torch.stack(result)
+        del face
+
+        return (result,)
+
+
+def tensor_to_image(tensor):
+    image = tensor.mul(255).clamp(0, 255).byte().cpu()
+    image = image[..., [2, 1, 0]].numpy()
+    return image
+
+
+def image_to_tensor(image):
+    tensor = torch.clamp(torch.from_numpy(image).float() / 255.0, 0, 1)
+    tensor = tensor[..., [2, 1, 0]]
+    return tensor
