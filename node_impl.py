@@ -686,6 +686,9 @@ class MediaPipeSegmenter:
                     "FLOAT",
                     {"default": 0.5, "min": 0.0, "max": 1.0, "step": 0.01},
                 ),
+                "face": ("BOOLEAN", {"default": True}),
+                "body": ("BOOLEAN", {"default": True}),
+                "hair": ("BOOLEAN", {"default": True}),
             },
         }
 
@@ -693,8 +696,21 @@ class MediaPipeSegmenter:
     FUNCTION = "doit"
     CATEGORY = "Moriverse/ops"
 
-    def doit(self, images, threshold=0.5):
-        body_model = MediapipeSegmenter(
+    def doit(self, images, threshold=0.5, face=True, body=True, hair=True):
+        parts = []
+        if hair:
+            parts.append(1)
+
+        if body:
+            parts.append(2)
+
+        if face:
+            parts.append(3)
+
+        if not parts:
+            raise Exception("No parts defined.")
+
+        model = MediapipeSegmenter(
             model_path=os.path.join(
                 folder_paths.models_dir,
                 "mediapipe",
@@ -707,10 +723,10 @@ class MediaPipeSegmenter:
 
         masks = []
         for image in images:
-            mask = body_model.detect(
+            mask = model.detect(
                 image,
                 threshold=threshold,
-                confidence_mask_indexes=[1, 2, 3],
+                confidence_mask_indexes=parts,
             )
             mask = np2tensor(mask)
             masks.append(mask)
