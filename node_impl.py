@@ -958,7 +958,7 @@ class GetCroppedFace:
 
     def apply(self, images, insightface):
 
-        from insightface.utils import face_align
+        from .face_align import norm_crop
 
         insightface.det_model.input_size = (640, 640)  # reset the detection size
 
@@ -973,7 +973,7 @@ class GetCroppedFace:
                 if face:
                     result.append(
                         image_to_tensor(
-                            face_align.norm_crop(
+                            norm_crop(
                                 image,
                                 landmark=face[0].kps,
                                 image_size=640,
