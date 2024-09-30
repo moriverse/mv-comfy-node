@@ -15,31 +15,38 @@ arcface_dst = np.array(
 )
 
 
-def estimate_norm(lmk, image_size=112, mode="arcface"):
+def estimate_norm(lmk, image_size=112, scale=1.0, mode="arcface"):
     assert lmk.shape == (5, 2)
     assert image_size % 112 == 0 or image_size % 128 == 0
     if image_size % 112 == 0:
         ratio = float(image_size) / 112.0
-        diff_x = 0
     else:
         ratio = float(image_size) / 128.0
-        diff_x = 8.0 * ratio
     dst = arcface_dst * ratio
-    dst[:, 0] += diff_x
+    dst = dst * scale
+
+    # Shift center point.
+    center_x = center_y = image_size / 2
+    nose_x_delta = center_x - dst[2, 0]
+    nose_y_delta = center_y - dst[2, 1] * 0.8 # Normally nose at not the center of the face.
+
+    dst[:, 0] += nose_x_delta
+    dst[:, 1] += nose_y_delta
+    
     tform = trans.SimilarityTransform()
     tform.estimate(lmk, dst)
     M = tform.params[0:2, :]
     return M
 
 
-def norm_crop(img, landmark, image_size=112, mode="arcface"):
-    M = estimate_norm(landmark, image_size, mode)
+def norm_crop(img, landmark, image_size=112, scale=1.0, mode="arcface"):
+    M = estimate_norm(landmark, image_size, scale=scale, mode=mode)
     warped = cv2.warpAffine(img, M, (image_size, image_size), borderValue=0.0)
     return warped
 
 
-def norm_crop2(img, landmark, image_size=112, mode="arcface"):
-    M = estimate_norm(landmark, image_size, mode)
+def norm_crop2(img, landmark, image_size=112, scale=1.0, mode="arcface"):
+    M = estimate_norm(landmark, image_size, scale=scale, mode=mode)
     warped = cv2.warpAffine(img, M, (image_size, image_size), borderValue=0.0)
     return warped, M
 

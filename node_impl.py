@@ -948,7 +948,12 @@ class GetCroppedFace:
             "required": {
                 "images": ("IMAGE",),
                 "insightface": ("FACEANALYSIS",),
+                "scale": (
+                    "FLOAT",
+                    {"default": 1.0, "min": 0.3, "max": 1.0, "step": 0.01},
+                ),
             },
+            
         }
 
     CATEGORY = "Moriverse/face"
@@ -956,7 +961,7 @@ class GetCroppedFace:
     RETURN_NAMES = ("face_image",)
     FUNCTION = "apply"
 
-    def apply(self, images, insightface):
+    def apply(self, images, insightface, scale=1.0):
 
         from .face_align import norm_crop
 
@@ -977,6 +982,7 @@ class GetCroppedFace:
                                 image,
                                 landmark=face[0].kps,
                                 image_size=640,
+                                scale=scale,
                             )
                         )
                     )
