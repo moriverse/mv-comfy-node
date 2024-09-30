@@ -689,6 +689,7 @@ class MediaPipeSegmenter:
                 "face": ("BOOLEAN", {"default": True}),
                 "body": ("BOOLEAN", {"default": True}),
                 "hair": ("BOOLEAN", {"default": True}),
+                "clothing": ("BOOLEAN", {"default": False}),
             },
         }
 
@@ -696,7 +697,9 @@ class MediaPipeSegmenter:
     FUNCTION = "doit"
     CATEGORY = "Moriverse/ops"
 
-    def doit(self, images, threshold=0.5, face=True, body=True, hair=True):
+    def doit(
+        self, images, threshold=0.5, face=True, body=True, hair=True, clothing=False
+    ):
         parts = []
         if hair:
             parts.append(1)
@@ -706,6 +709,9 @@ class MediaPipeSegmenter:
 
         if face:
             parts.append(3)
+
+        if clothing:
+            parts.append(4)
 
         if not parts:
             raise Exception("No parts defined.")
