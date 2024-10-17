@@ -941,6 +941,26 @@ class InsightFaceLoader:
         return model
 
 
+class Text:
+    @classmethod
+    def INPUT_TYPES(self):
+        return {
+            "required": {
+                "text": (
+                    "STRING",
+                    {"default": "", "multiline": True, "dynamicPrompts": False},
+                ),
+            },
+        }
+
+    CATEGORY = "Moriverse/utils"
+    RETURN_TYPES = ("STRING",)
+    RETURN_NAMES = ("text",)
+    FUNCTION = "apply"
+
+    def apply(self, text):
+        return (text,)
+
 class GetCroppedFace:
     @classmethod
     def INPUT_TYPES(self):

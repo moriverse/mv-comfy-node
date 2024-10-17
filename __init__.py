@@ -14,6 +14,7 @@ NODE_CLASS_MAPPINGS = {
     "[MV]ImageBrightness": ImageBrightness,
     "[MV]InsightFaceLoader": InsightFaceLoader,
     "[MV]GetCroppedFace": GetCroppedFace,
+    "[MV]Text": Text,
 }
 
 
@@ -31,6 +32,7 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "[MV]ImageBrightness": "Image Brightness",
     "[MV]InsightFaceLoader": "InsightFace Loader",
     "[MV]GetCroppedFace": "Get Cropped Face",
+    "[MV]Text": "Text",
 }
 
 __all__ = ["NODE_CLASS_MAPPINGS", "NODE_DISPLAY_NAME_MAPPINGS"]

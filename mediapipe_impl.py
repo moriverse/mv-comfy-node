@@ -42,7 +42,7 @@ class MediapipeSegmenter:
         with ImageSegmenter.create_from_options(options) as segmenter:
             mp_image = mp.Image(
                 image_format=mp.ImageFormat.SRGB,
-                data=image,
+                data=image.copy(),
             )
             segmentation_result = segmenter.segment(mp_image)
 
