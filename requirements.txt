@@ -9,3 +9,4 @@ mediapipe
 clip-interrogator==0.6.0
 open_clip_torch
 fal-client
+python-dotenv

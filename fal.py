@@ -1,6 +1,10 @@
 import fal_client
 import typing as t
 
+from dotenv import load_dotenv
+
+load_dotenv(override=True)
+
 
 def generate(prompt: str) -> t.Optional[str]:
     def on_queue_update(update):
