@@ -1047,6 +1047,10 @@ class FalApi:
                     "STRING",
                     {"default": "", "multiline": True, "dynamicPrompts": False},
                 ),
+                "seed": (
+                    "INT",
+                    {"default": 0},
+                ),
             },
         }
 
@@ -1054,8 +1058,8 @@ class FalApi:
     FUNCTION = "apply"
     CATEGORY = "Moriverse/api"
 
-    def apply(self, text):
-        image_url = generate(prompt=text)
+    def apply(self, text, seed):
+        image_url = generate(prompt=text, seed=seed)
         if not image_url:
             raise "Cannot generate via Fal API."
 

@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 load_dotenv(override=True)
 
 
-def generate(prompt: str) -> t.Optional[str]:
+def generate(prompt: str, seed: int) -> t.Optional[str]:
     def on_queue_update(update):
         pass
 
@@ -14,6 +14,7 @@ def generate(prompt: str) -> t.Optional[str]:
         "fal-ai/flux-pro/v1.1-ultra",
         arguments={
             "prompt": prompt,
+            "seed": seed,
             "aspect_ratio": "3:4",
         },
         on_queue_update=on_queue_update,
