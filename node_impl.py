@@ -995,13 +995,14 @@ class GetCroppedFace:
                     size  # TODO: hacky but seems to be working
                 )
                 image = tensor_to_image(images[i])
-                face = insightface.get(image)
+                faces = insightface.get(image)
+                face = get_largest_face(faces)
                 if face:
                     result.append(
                         image_to_tensor(
                             norm_crop(
                                 image,
-                                landmark=face[0].kps,
+                                landmark=face.kps,
                                 image_size=640,
                                 scale=scale,
                             )
@@ -1020,6 +1021,22 @@ class GetCroppedFace:
         del face
 
         return (result,)
+
+
+def get_largest_face(faces):
+    max_area = None
+    max_face = None
+    for face in faces:
+        bbox = face.get("bbox")
+        w = bbox[2] - bbox[0]
+        h = bbox[3] - bbox[1]
+        area = w * h
+
+        if max_area is None or max_area < area:
+            max_area = area
+            max_face = face
+
+    return max_face
 
 
 def tensor_to_image(tensor):
