@@ -17,6 +17,7 @@ import folder_paths
 from .blip_impl import Interrogator, Config
 from .mediapipe_impl import MediapipeSegmenter
 from .network import requests_session_with_retries
+from .fal import generate
 
 
 def tensor2np(image):
@@ -961,6 +962,7 @@ class Text:
     def apply(self, text):
         return (text,)
 
+
 class GetCroppedFace:
     @classmethod
     def INPUT_TYPES(self):
@@ -973,7 +975,6 @@ class GetCroppedFace:
                     {"default": 1.0, "min": 0.3, "max": 1.0, "step": 0.01},
                 ),
             },
-            
         }
 
     CATEGORY = "Moriverse/face"
@@ -1031,3 +1032,46 @@ def image_to_tensor(image):
     tensor = torch.clamp(torch.from_numpy(image).float() / 255.0, 0, 1)
     tensor = tensor[..., [2, 1, 0]]
     return tensor
+
+
+class FalApi:
+    def __init__(self) -> None:
+        self.output_dir = folder_paths.get_temp_directory()
+        self.filename_prefix = "TempImageFromUrl"
+
+    @classmethod
+    def INPUT_TYPES(self):
+        return {
+            "required": {
+                "text": (
+                    "STRING",
+                    {"default": "", "multiline": True, "dynamicPrompts": False},
+                ),
+            },
+        }
+
+    RETURN_TYPES = ("IMAGE",)
+    FUNCTION = "apply"
+    CATEGORY = "Moriverse/api"
+
+    def apply(self, text):
+        image_url = generate(prompt=text)
+        if not image_url:
+            raise "Cannot generate via Fal API."
+
+        images = load_images_from_url(urls=[image_url])
+        if not images:
+            raise Exception(f"No image loaded from url: {image_url}")
+
+        image = images[0]
+        preview = prepare_image_for_preview(
+            image,
+            self.output_dir,
+            self.filename_prefix,
+        )
+        result = pil2tensor(image)
+
+        return {
+            "ui": {"images": [preview]},
+            "result": (result,),
+        }

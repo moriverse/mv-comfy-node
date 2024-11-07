@@ -15,6 +15,7 @@ NODE_CLASS_MAPPINGS = {
     "[MV]InsightFaceLoader": InsightFaceLoader,
     "[MV]GetCroppedFace": GetCroppedFace,
     "[MV]Text": Text,
+    "[MV]FalAPI": FalApi,
 }
 
 
@@ -33,6 +34,7 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "[MV]InsightFaceLoader": "InsightFace Loader",
     "[MV]GetCroppedFace": "Get Cropped Face",
     "[MV]Text": "Text",
+    "[MV]FalAPI": "Fal API",
 }
 
 __all__ = ["NODE_CLASS_MAPPINGS", "NODE_DISPLAY_NAME_MAPPINGS"]
