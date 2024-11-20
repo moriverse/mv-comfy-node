@@ -10,3 +10,4 @@ clip-interrogator==0.6.0
 open_clip_torch
 fal-client
 python-dotenv
+numpy>=2.0.0
