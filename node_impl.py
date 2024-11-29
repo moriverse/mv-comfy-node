@@ -38,7 +38,7 @@ def np2tensor(image):
     return torch.from_numpy(image.astype(np.float32) / 255.0).unsqueeze(0)
 
 
-def load_images_from_url(urls: t.List[str]):
+def load_images_from_url(urls: t.List[str], timeout: t.Optional[int] = 60):
     images = []
 
     for url in urls:
@@ -48,7 +48,7 @@ def load_images_from_url(urls: t.List[str]):
         if url.startswith("http://") or url.startswith("https://"):
             response = requests_session_with_retries().get(
                 url,
-                timeout=10,
+                timeout=timeout,
                 stream=True,
             )
             response.raise_for_status()
